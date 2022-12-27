@@ -8,6 +8,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
@@ -851,6 +852,34 @@ pub fn load_config(filename: &str) -> Res<Configuration> {
     //replace_tokens_in_config(&mut configuration);
     //replace_relative_paths_in_config(&mut configuration, filename);
     Ok(configuration)
+}
+
+pub fn write_config(filename: &str, config: &Configuration) -> Res<()> {
+    let mut file = match File::create(filename) {
+        Ok(f) => f,
+        Err(err) => {
+            let msg = format!("Could not create config file '{}'. Error: {}", filename, err);
+            return Err(ConfigError::new(&msg).into());
+        }
+    };
+
+    let config_yaml: String = match serde_yaml::to_string(&config) {
+        Ok(config) => config,
+        Err(err) => {
+            let msg = format!("Invalid config file!\n{}", err);
+            return Err(ConfigError::new(&msg).into());
+        }
+    };
+
+    let _number_of_bytes: usize = match file.write(config_yaml.as_bytes()) {
+        Ok(number_of_bytes) => number_of_bytes,
+        Err(err) => {
+            let msg = format!("Could not write config file '{}'. Error: {}", filename, err);
+            return Err(ConfigError::new(&msg).into());
+        }
+    };
+
+    Ok(())
 }
 
 fn apply_overrides(configuration: &mut Configuration) {
