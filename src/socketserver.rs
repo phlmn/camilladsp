@@ -79,6 +79,7 @@ enum WsCommand {
     GetPreviousConfig,
     ReadConfig(String),
     ReadConfigFile(String),
+    WriteConfigFile(String),
     ValidateConfig(String),
     GetConfigJson,
     GetConfigFilePath,
@@ -1272,6 +1273,29 @@ fn handle_command(
                     result: WsResult::Error,
                     value: error.to_string(),
                 })
+            }
+        },
+        WsCommand::WriteConfigFile(path) => {
+            let config_opt = &*shared_data_inst.active_config.lock();
+
+            match config_opt {
+                None => Some(WsReply::ReadConfigFile {
+                    result: WsResult::Error,
+                    value: "No config to write.".to_string(),
+                }),
+                Some(config) => match config::write_config(&path, config) {
+                    Ok(conf) => Some(WsReply::ReadConfigFile {
+                        result: WsResult::Ok,
+                        value: serde_yaml::to_string(&conf).unwrap(),
+                    }),
+                    Err(error) => {
+                        error!("Error writing config file: {}", error);
+                        Some(WsReply::ReadConfigFile {
+                            result: WsResult::Error,
+                            value: error.to_string(),
+                        })
+                    }
+                },
             }
         },
         WsCommand::ValidateConfig(config_yml) => {
