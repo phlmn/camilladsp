@@ -429,6 +429,9 @@ pub enum Filter {
     Volume {
         parameters: VolumeParameters,
     },
+    Limiter {
+        parameters: LimiterParameters,
+    },
     Loudness {
         parameters: LoudnessParameters,
     },
@@ -653,6 +656,20 @@ pub struct VolumeParameters {
     #[serde(default = "default_ramp_time")]
     pub ramp_time: f32,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct LimiterParameters {
+    #[serde(default = "default_decay")]
+    pub decay: f32,
+    pub threshold: f32,
+    pub rms_samples: usize,
+}
+
+fn default_decay() -> f32 {
+    12.0
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct LoudnessParameters {
@@ -1083,6 +1100,7 @@ pub fn config_diff(currentconf: &Configuration, newconf: &Configuration) -> Conf
                 | (Filter::Dither { .. }, Filter::Dither { .. })
                 | (Filter::DiffEq { .. }, Filter::DiffEq { .. })
                 | (Filter::Volume { .. }, Filter::Volume { .. })
+                | (Filter::Limiter { .. }, Filter::Limiter { .. }) => {}
                 | (Filter::Loudness { .. }, Filter::Loudness { .. }) => {}
                 _ => {
                     // A filter changed type, need to rebuild the pipeline
