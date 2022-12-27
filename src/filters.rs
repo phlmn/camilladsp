@@ -9,6 +9,7 @@ use crate::diffeq;
 use crate::dither;
 use crate::fftconv;
 use crate::limiter;
+use crate::rms_limiter;
 use crate::loudness;
 use crate::mixer;
 use crate::noisegate;
@@ -218,6 +219,20 @@ impl FilterGroup {
                             processing_params.clone(),
                         ))
                     }
+                    config::Filter::Limiter { parameters, .. } => {
+                        Box::new(limiter::Limiter::from_config(
+                            name,
+                            parameters,
+                        ))
+                    }
+                    config::Filter::RMSLimiter { parameters, .. } => {
+                        Box::new(rms_limiter::RMSLimiter::from_config(
+                            name,
+                            parameters,
+                            waveform_length,
+                            sample_freq,
+                        ))
+                    }
                     config::Filter::Loudness { parameters, .. } => {
                         Box::new(loudness::Loudness::from_config(
                             name,
@@ -231,9 +246,6 @@ impl FilterGroup {
                     }
                     config::Filter::DiffEq { parameters, .. } => {
                         Box::new(diffeq::DiffEq::from_config(name, parameters))
-                    }
-                    config::Filter::Limiter { parameters, .. } => {
-                        Box::new(limiter::Limiter::from_config(name, parameters))
                     }
                 };
             filters.push(filter);
@@ -579,6 +591,7 @@ pub fn validate_filter(fs: usize, filter_config: &config::Filter) -> Res<()> {
         config::Filter::Volume { parameters, .. } => {
             basicfilters::validate_volume_config(parameters)
         }
+        config::Filter::RMSLimiter { parameters, .. } => rms_limiter::validate_config(parameters),
         config::Filter::Loudness { parameters, .. } => loudness::validate_config(parameters),
         config::Filter::BiquadCombo { parameters, .. } => {
             biquadcombo::validate_config(fs, parameters)

@@ -773,6 +773,11 @@ pub enum Filter {
         description: Option<String>,
         parameters: LimiterParameters,
     },
+    RMSLimiter {
+        #[serde(default)]
+        description: Option<String>,
+        parameters: RMSLimiterParameters,
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -1032,6 +1037,19 @@ pub enum LoudnessFader {
     Aux2 = 2,
     Aux3 = 3,
     Aux4 = 4,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct RMSLimiterParameters {
+    #[serde(default = "default_decay")]
+    pub decay: f32,
+    pub threshold: f32,
+    pub rms_samples: usize,
+}
+
+fn default_decay() -> f32 {
+    12.0
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -1775,6 +1793,7 @@ pub fn config_diff(currentconf: &Configuration, newconf: &Configuration) -> Conf
                     | (Filter::Dither { .. }, Filter::Dither { .. })
                     | (Filter::DiffEq { .. }, Filter::DiffEq { .. })
                     | (Filter::Volume { .. }, Filter::Volume { .. })
+                    | (Filter::Limiter { .. }, Filter::Limiter { .. })
                     | (Filter::Loudness { .. }, Filter::Loudness { .. }) => {}
                     _ => {
                         // A filter changed type, need to rebuild the pipeline
@@ -1782,9 +1801,7 @@ pub fn config_diff(currentconf: &Configuration, newconf: &Configuration) -> Conf
                     }
                 };
                 // Only parameters changed, ok to update
-                if params != current_filter {
-                    filters.push(filter.to_string());
-                }
+                return ConfigChange::Pipeline;
             }
         }
     }

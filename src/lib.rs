@@ -132,6 +132,7 @@ pub mod filters;
 pub mod generatordevice;
 pub mod helpers;
 pub mod limiter;
+pub mod rms_limiter;
 pub mod loudness;
 pub mod mixer;
 pub mod noisegate;
